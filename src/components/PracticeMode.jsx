@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react'
+import MiniGame from './MiniGame'
 
 const ENCOURAGEMENTS_CORRECT = ['Super! 🎉', 'Toll! ⭐', 'Richtig! 🌟', 'Fantastisch! 🦄', 'Bravo! 🎊', 'Klasse! 🏆']
 const ENCOURAGEMENTS_WRONG = ['Fast! Versuch es nochmal 💪', 'Nicht ganz... 🤔', 'Probier es nochmal! 😊']
@@ -44,6 +45,7 @@ export default function PracticeMode({ onBack, onEarnStar }) {
   const [answered, setAnswered] = useState(false)
   const [showUnlock, setShowUnlock] = useState(null)
   const [animKey, setAnimKey] = useState(0)
+  const [showMiniGame, setShowMiniGame] = useState(false)
 
   const numbers = Array.from({ length: 10 }, (_, i) => i + 1)
 
@@ -69,6 +71,9 @@ export default function PracticeMode({ onBack, onEarnStar }) {
           setShowUnlock(TRACTOR_TIERS[newTierIndex].label)
           setTimeout(() => setShowUnlock(null), 2200)
         }
+      }
+      if (newStreak % 10 === 0) {
+        setShowMiniGame(true)
       }
       const stars = newStreak % 5 === 0 ? 2 : 1
       setSessionStars(prev => prev + stars)
@@ -223,6 +228,17 @@ export default function PracticeMode({ onBack, onEarnStar }) {
           </div>
         )}
       </div>
+
+      {showMiniGame && (
+        <MiniGame
+          selectedTables={selectedTables}
+          onEarnStar={onEarnStar}
+          onClose={(stars) => {
+            setSessionStars(prev => prev + stars)
+            setShowMiniGame(false)
+          }}
+        />
+      )}
     </div>
   )
 }
