@@ -8,6 +8,7 @@ export default function HomeScreen({ onSelectMode, totalStars }) {
   return (
     <div className="home-screen">
       <div className="mascot">{mascot}</div>
+      <p className="welcome-msg">Hallo Jona! 👋</p>
       <h1 className="app-title">Das Einmaleins</h1>
       <p className="app-subtitle">Lernen macht Spaß!</p>
 

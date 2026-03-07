@@ -75,6 +75,13 @@ html, body {
   50% { transform: translateY(-12px) rotate(3deg); }
 }
 
+.welcome-msg {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--primary);
+  margin-bottom: 4px;
+}
+
 .app-title {
   font-size: 36px;
   font-weight: 900;
