@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect, useRef } from 'react'
 
 const ENCOURAGEMENTS_CORRECT = ['Super! 🎉', 'Toll! ⭐', 'Richtig! 🌟', 'Fantastisch! 🦄', 'Bravo! 🎊', 'Klasse! 🏆']
 const ENCOURAGEMENTS_WRONG = ['Fast! Versuch es nochmal 💪', 'Nicht ganz... 🤔', 'Probier es nochmal! 😊']
@@ -42,7 +42,8 @@ export default function PracticeMode({ onBack, onEarnStar }) {
   const [streak, setStreak] = useState(0)
   const [sessionStars, setSessionStars] = useState(0)
   const [answered, setAnswered] = useState(false)
-  const [prevTier, setPrevTier] = useState(-1)
+  const [showUnlock, setShowUnlock] = useState(null)
+  const [animKey, setAnimKey] = useState(0)
 
   const numbers = Array.from({ length: 10 }, (_, i) => i + 1)
 
@@ -63,7 +64,11 @@ export default function PracticeMode({ onBack, onEarnStar }) {
       const newTierIndex = getTractorTier(newStreak)
       const oldTierIndex = getTractorTier(streak)
       if (newTierIndex !== oldTierIndex) {
-        setPrevTier(newTierIndex)
+        setAnimKey(k => k + 1)
+        if (newTierIndex > 0) {
+          setShowUnlock(TRACTOR_TIERS[newTierIndex].label)
+          setTimeout(() => setShowUnlock(null), 2200)
+        }
       }
       const stars = newStreak % 5 === 0 ? 2 : 1
       setSessionStars(prev => prev + stars)
@@ -72,7 +77,8 @@ export default function PracticeMode({ onBack, onEarnStar }) {
       setFeedback({ type: 'correct', msg, stars })
     } else {
       setStreak(0)
-      setPrevTier(-1)
+      setAnimKey(k => k + 1)
+      setShowUnlock(null)
       const msg = ENCOURAGEMENTS_WRONG[Math.floor(Math.random() * ENCOURAGEMENTS_WRONG.length)]
       setFeedback({ type: 'wrong', msg, correct: question.correct })
     }
@@ -86,7 +92,6 @@ export default function PracticeMode({ onBack, onEarnStar }) {
 
   const tierIndex = getTractorTier(streak)
   const tier = TRACTOR_TIERS[tierIndex]
-  const tierJustUnlocked = prevTier === tierIndex && tierIndex > 0
 
   const nextMin = tierIndex < 5 ? TRACTOR_TIERS[tierIndex + 1].min : streak
   const tierStart = tier.min
@@ -130,7 +135,7 @@ export default function PracticeMode({ onBack, onEarnStar }) {
         )}
       </div>
 
-      <div className="tractor-zone">
+      <div className="tractor-zone" key={animKey}>
         {streak === 0 ? (
           <div className="tractor-idle">
             <span className="tractor-emoji">🌱</span>
@@ -139,7 +144,6 @@ export default function PracticeMode({ onBack, onEarnStar }) {
         ) : (
           <div
             className="tractor-display"
-            key={tierIndex}
             style={{
               background: tier.bg,
               borderColor: tier.color,
@@ -168,9 +172,9 @@ export default function PracticeMode({ onBack, onEarnStar }) {
           </div>
         )}
 
-        {tierJustUnlocked && (
-          <div className="tier-unlocked-banner" key={`unlock-${tierIndex}`}>
-            <span>🎉 Neues Level: {tier.label} 🎉</span>
+        {showUnlock && (
+          <div className="tier-unlocked-banner">
+            <span>🎉 Neues Level: {showUnlock} 🎉</span>
           </div>
         )}
       </div>
