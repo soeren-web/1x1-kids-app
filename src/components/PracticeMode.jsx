@@ -3,6 +3,19 @@ import React, { useState, useCallback } from 'react'
 const ENCOURAGEMENTS_CORRECT = ['Super! 🎉', 'Toll! ⭐', 'Richtig! 🌟', 'Fantastisch! 🦄', 'Bravo! 🎊', 'Klasse! 🏆']
 const ENCOURAGEMENTS_WRONG = ['Fast! Versuch es nochmal 💪', 'Nicht ganz... 🤔', 'Probier es nochmal! 😊']
 
+const TRACTOR_TIERS = [
+  { min: 0,  max: 0,           emoji: '🌱',       badgeEmoji: '🌱', label: 'Los geht\'s!',        color: '#A8E063', bg: '#F0FFF0' },
+  { min: 1,  max: 4,           emoji: '🚜',       badgeEmoji: '🚜', label: 'Traktor unterwegs!',  color: '#56CCF2', bg: '#EFF9FF' },
+  { min: 5,  max: 9,           emoji: '🌾🚜🌾',  badgeEmoji: '🚜', label: 'Ernte-Serie!',        color: '#FFC857', bg: '#FFFBEF' },
+  { min: 10, max: 14,          emoji: '🚜💨',     badgeEmoji: '🚜', label: 'Volldampf!',          color: '#FF8E53', bg: '#FFF5EF' },
+  { min: 15, max: 19,          emoji: '🚜🚜',     badgeEmoji: '🚜', label: 'Traktor-Konvoi!',     color: '#F953C6', bg: '#FFF0FB' },
+  { min: 20, max: Infinity,    emoji: '🏆🚜🏆',   badgeEmoji: '🏆', label: 'Meister-Fahrer!',     color: '#6C63FF', bg: '#F0EEFF' },
+]
+
+function getTractorTier(streak) {
+  return TRACTOR_TIERS.findIndex(t => streak >= t.min && streak <= t.max)
+}
+
 function generateQuestion(selectedTables) {
   const tables = selectedTables.length > 0 ? selectedTables : Array.from({ length: 10 }, (_, i) => i + 1)
   const a = tables[Math.floor(Math.random() * tables.length)]
@@ -29,6 +42,7 @@ export default function PracticeMode({ onBack, onEarnStar }) {
   const [streak, setStreak] = useState(0)
   const [sessionStars, setSessionStars] = useState(0)
   const [answered, setAnswered] = useState(false)
+  const [prevTier, setPrevTier] = useState(-1)
 
   const numbers = Array.from({ length: 10 }, (_, i) => i + 1)
 
@@ -46,6 +60,11 @@ export default function PracticeMode({ onBack, onEarnStar }) {
     if (isCorrect) {
       const newStreak = streak + 1
       setStreak(newStreak)
+      const newTierIndex = getTractorTier(newStreak)
+      const oldTierIndex = getTractorTier(streak)
+      if (newTierIndex !== oldTierIndex) {
+        setPrevTier(newTierIndex)
+      }
       const stars = newStreak % 5 === 0 ? 2 : 1
       setSessionStars(prev => prev + stars)
       onEarnStar(stars)
@@ -53,6 +72,7 @@ export default function PracticeMode({ onBack, onEarnStar }) {
       setFeedback({ type: 'correct', msg, stars })
     } else {
       setStreak(0)
+      setPrevTier(-1)
       const msg = ENCOURAGEMENTS_WRONG[Math.floor(Math.random() * ENCOURAGEMENTS_WRONG.length)]
       setFeedback({ type: 'wrong', msg, correct: question.correct })
     }
@@ -64,6 +84,18 @@ export default function PracticeMode({ onBack, onEarnStar }) {
     }, 1500)
   }
 
+  const tierIndex = getTractorTier(streak)
+  const tier = TRACTOR_TIERS[tierIndex]
+  const tierJustUnlocked = prevTier === tierIndex && tierIndex > 0
+
+  const nextMin = tierIndex < 5 ? TRACTOR_TIERS[tierIndex + 1].min : streak
+  const tierStart = tier.min
+  const meterProgress = tierIndex === 5
+    ? 100
+    : tierIndex === 0
+      ? 0
+      : Math.min(100, ((streak - tierStart) / (nextMin - tierStart)) * 100)
+
   return (
     <div className="practice-screen">
       <div className="screen-header">
@@ -71,7 +103,12 @@ export default function PracticeMode({ onBack, onEarnStar }) {
         <h2>Üben</h2>
         <div className="session-info">
           <span>⭐ {sessionStars}</span>
-          <span className="streak-badge">🔥 {streak}</span>
+          <span
+            className="streak-badge"
+            style={{ background: streak > 0 ? tier.color : '#aaa' }}
+          >
+            {tier.badgeEmoji} {streak}
+          </span>
         </div>
       </div>
 
@@ -90,6 +127,51 @@ export default function PracticeMode({ onBack, onEarnStar }) {
         </div>
         {selectedTables.length === 0 && (
           <span className="selector-hint">Alle Reihen aktiv</span>
+        )}
+      </div>
+
+      <div className="tractor-zone">
+        {streak === 0 ? (
+          <div className="tractor-idle">
+            <span className="tractor-emoji">🌱</span>
+            <span className="tractor-idle-label">Los geht's!</span>
+          </div>
+        ) : (
+          <div
+            className="tractor-display"
+            key={tierIndex}
+            style={{
+              background: tier.bg,
+              borderColor: tier.color,
+              '--bounce-speed': tierIndex === 5 ? '0.9s' : '1.8s',
+              '--emoji-size': tierIndex === 5 ? '52px' : '40px',
+            }}
+          >
+            <div className="tractor-emoji-row">
+              <span className="tractor-main-emoji">{tier.emoji}</span>
+            </div>
+            <div className="tractor-label" style={{ color: tier.color }}>
+              {tier.label}
+            </div>
+            <div className="tractor-streak-count">
+              {streak}er Serie
+            </div>
+            <div className="tractor-meter">
+              <div
+                className="tractor-meter-fill"
+                style={{
+                  background: tier.color,
+                  width: `${meterProgress}%`,
+                }}
+              />
+            </div>
+          </div>
+        )}
+
+        {tierJustUnlocked && (
+          <div className="tier-unlocked-banner" key={`unlock-${tierIndex}`}>
+            <span>🎉 Neues Level: {tier.label} 🎉</span>
+          </div>
         )}
       </div>
 
@@ -136,10 +218,6 @@ export default function PracticeMode({ onBack, onEarnStar }) {
             </div>
           </div>
         )}
-      </div>
-
-      <div className="progress-hint">
-        {streak >= 5 && <div className="streak-fire">🔥 {streak}er Serie! Weiter so!</div>}
       </div>
     </div>
   )
